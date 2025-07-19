@@ -46,7 +46,7 @@ class Invoice(models.Model):
     tags = models.CharField(max_length=255, blank=True, null=True, help_text="Comma-separated tags")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    attachment = models.FileField(upload_to='attachments/', blank=True, null=True)
+    attachment = models.FileField(upload_to='invoices/', blank=True, null=True)
     
     def __str__(self):
         return f"{self.invoice_number} - {self.vendor.name}"
@@ -75,6 +75,7 @@ class Dispute(models.Model):
     raised_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
+    attachment = models.FileField(upload_to='disputes/', null=True, blank=True)
     
     def __str__(self):
         return f"Dispute for {self.invoice.invoice_number} by {self.raised_by.username}"

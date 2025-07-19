@@ -19,15 +19,24 @@ class IsAdminOrFinance(permissions.BasePermission):
             request.user.role in ['admin', 'finance'] or request.user.is_superuser
         )
 
-class IsOwnerOrAdminOrFinance(permissions.BasePermission):
+class IsInvoiceOwnerOrAdminOrFinance(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        # For safe methods or if user is owner/admin/finance
         return (
-            request.method in permissions.SAFE_METHODS
-            or obj.created_by == request.user
-            or getattr(request.user, 'role', None) in ['admin', 'finance']
+            obj.created_by == request.user
+            or (hasattr(request.user, 'role') and request.user.role in ['admin', 'finance'])
             or request.user.is_superuser
+            or request.method in permissions.SAFE_METHODS
         )
+
+class IsDisputeOwnerOrAdminOrFinance(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return (
+            obj.raised_by == request.user
+            or (hasattr(request.user, 'role') and request.user.role in ['admin', 'finance'])
+            or request.user.is_superuser
+            or request.method in permissions.SAFE_METHODS
+        )
+
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
@@ -54,7 +63,7 @@ class VendorViewSet(viewsets.ModelViewSet):
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
-    permission_classes = [IsOwnerOrAdminOrFinance]
+    permission_classes = [IsInvoiceOwnerOrAdminOrFinance]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
 
     filterset_fields = [
@@ -87,7 +96,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 class DisputeViewSet(viewsets.ModelViewSet):
     queryset = Dispute.objects.all()
     serializer_class = DisputeSerializer
-    permission_classes = [IsOwnerOrAdminOrFinance]
+    permission_classes = [IsDisputeOwnerOrAdminOrFinance]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'category', 'invoice', 'raised_by', 'resolved_by']
     search_fields = ['description', 'invoice__invoice_number']
@@ -97,8 +106,7 @@ class DisputeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(raised_by=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(raised_by=self.request.user)
+
 
 
 

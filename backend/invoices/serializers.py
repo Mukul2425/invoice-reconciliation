@@ -54,12 +54,13 @@ class DisputeSerializer(serializers.ModelSerializer):
     )
     raised_by = serializers.StringRelatedField(read_only=True)
     resolved_by = serializers.StringRelatedField(read_only=True)
+    attachment = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = Dispute
         fields = [
             'id', 'invoice', 'invoice_id', 'raised_by', 'description', 'category',
             'status', 'resolution_comments', 'resolved_by', 'raised_at',
-            'resolved_at', 'updated_at'
+            'resolved_at', 'updated_at','attachment'
         ]
         read_only_fields = ['raised_by', 'resolved_by', 'raised_at', 'resolved_at', 'updated_at']
