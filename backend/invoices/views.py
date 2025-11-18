@@ -8,10 +8,28 @@ from rest_framework import status as drf_status
 from rest_framework.response import Response
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
-
+from rest_framework import status as drf_status
+from rest_framework.response import Response
+from rest_framework import viewsets, permissions, filters
+from .models import Invoice, Dispute, Vendor
+from .serializers import InvoiceSerializer, DisputeSerializer, VendorSerializer
 
 
 from rest_framework import permissions
+
+
+
+class VendorViewSet(viewsets.ModelViewSet):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['name']
+    search_fields = ['name', 'contact_info']
+    ordering_fields = ['name']
+    ordering = ['name']
+
+
 
 class IsAdminOrFinance(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -28,14 +46,7 @@ class IsInvoiceOwnerOrAdminOrFinance(permissions.BasePermission):
             or request.method in permissions.SAFE_METHODS
         )
 
-class IsDisputeOwnerOrAdminOrFinance(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return (
-            obj.raised_by == request.user
-            or (hasattr(request.user, 'role') and request.user.role in ['admin', 'finance'])
-            or request.user.is_superuser
-            or request.method in permissions.SAFE_METHODS
-        )
+
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -44,20 +55,6 @@ class UserRegistrationView(generics.CreateAPIView):
     # Anyone can register, so no permission_classes => open endpoint
 
 
-
-from rest_framework import viewsets, permissions, filters
-from .models import Invoice, Dispute, Vendor
-from .serializers import InvoiceSerializer, DisputeSerializer, VendorSerializer
-
-class VendorViewSet(viewsets.ModelViewSet):
-    queryset = Vendor.objects.all()
-    serializer_class = VendorSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['name']
-    search_fields = ['name', 'contact_info']
-    ordering_fields = ['name']
-    ordering = ['name']
 
 
 class InvoiceViewSet(viewsets.ModelViewSet):
@@ -81,6 +78,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+    def perform_new_action(self,serializer):
+        response="Everything succesfully works"
+
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         status_before = instance.status
@@ -92,6 +92,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             instance.save(update_fields=['approved_by'])
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=200)
+
+class IsDisputeOwnerOrAdminOrFinance(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return (
+            obj.raised_by == request.user
+            or (hasattr(request.user, 'role') and request.user.role in ['admin', 'finance'])
+            or request.user.is_superuser
+            or request.method in permissions.SAFE_METHODS
+        )
+
 
 class DisputeViewSet(viewsets.ModelViewSet):
     queryset = Dispute.objects.all()
